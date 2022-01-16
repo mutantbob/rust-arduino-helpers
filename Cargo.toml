@@ -31,5 +31,5 @@ lto = true
 opt-level = "s"
 
 
-[workspace]
-modules = [ "arduino-build-helpers"]
+#[workspace]
+#modules = [ "arduino-build-helpers", "rust-arduino-runtime" ]
