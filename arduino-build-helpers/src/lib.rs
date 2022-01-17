@@ -28,6 +28,26 @@ impl ArduinoBuilder for Build {
     }
 }
 
+pub trait ArduinoBindgen {
+    fn rig_arduino_uno(self) -> Self;
+}
+
+impl ArduinoBindgen for bindgen::Builder {
+    fn rig_arduino_uno(self) -> Self {
+        self.clang_args(&[
+            "-I/usr/share/arduino/hardware/arduino/avr/cores/arduino/",
+            "-I/usr/share/arduino/hardware/arduino/avr/variants/standard/",
+            "-I/usr/avr/include",
+            "-DF_CPU=16000000L",
+            "-DARDUINO=10807",
+            "-DARDUINO_AVR_UNO",
+            "-DARDUINO_ARCH_AVR",
+            "-mmcu=atmega328p",
+        ])
+        .use_core() // because no_std
+    }
+}
+
 #[cfg(test)]
 mod tests {
     #[test]

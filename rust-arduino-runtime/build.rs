@@ -1,5 +1,6 @@
 use std::io::stderr;
 //use arduino_build_helpers::list_core_arduino_source_files;
+use arduino_build_helpers::ArduinoBindgen;
 use arduino_build_helpers::ArduinoBuilder;
 use std::env;
 use std::ffi::OsStr;
@@ -37,18 +38,9 @@ fn generate_bindings_rs() {
     println!("cargo:rerun-if-changed={}", arduino_h);
     let bindings = bindgen::Builder::default()
         .header(arduino_h)
-        .clang_args(&[
-            "-I/usr/share/arduino/hardware/arduino/avr/cores/arduino/",
-            "-I/usr/share/arduino/hardware/arduino/avr/variants/standard/",
-            "-I/usr/avr/include",
-            "-D__COMPILING_AVR_LIBC__",
-            "-DF_CPU=16000000L",
-            "-x",
-            "c++",
-            "-mmcu=atmega328p",
-        ])
+        .rig_arduino_uno()
+        .clang_args(&["-x", "c++"])
         .parse_callbacks(Box::new(bindgen::CargoCallbacks))
-        .use_core() // because no_std
         .ctypes_prefix("crate::workaround_cty") // the cty crate won't compile
         .generate()
         .expect("Unable to generate bindings");
