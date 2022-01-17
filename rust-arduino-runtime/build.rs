@@ -1,11 +1,12 @@
 use std::io::stderr;
 //use arduino_build_helpers::list_core_arduino_source_files;
 use arduino_build_helpers::ArduinoBuilder;
+use std::env;
+use std::ffi::OsStr;
 use std::fs;
 use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
-use std::env;
 
 fn list_core_arduino_source_files<P: AsRef<Path>>(
     dirname: P,
@@ -31,34 +32,32 @@ fn is_c_or_cpp(path: &PathBuf) -> bool {
         .unwrap_or(false)
 }
 
-fn generate_bindings_rs()
-{
+fn generate_bindings_rs() {
     let arduino_h = "/usr/share/arduino/hardware/arduino/avr/cores/arduino/Arduino.h";
     println!("cargo:rerun-if-changed={}", arduino_h);
-       let bindings = bindgen::Builder::default()
-           .header(arduino_h)
-           .clang_args(&[
-               "-I/usr/share/arduino/hardware/arduino/avr/cores/arduino/",
-               "-I/usr/share/arduino/hardware/arduino/avr/variants/standard/",
-               "-I/usr/avr/include",
-               "-D__COMPILING_AVR_LIBC__",
-               "-DF_CPU=16000000L",
-               "-x",
-               "c++",
-               "-mmcu=atmega328p",
-           ])
-           .parse_callbacks(Box::new(bindgen::CargoCallbacks))
-           .use_core() // because no_std
-           .ctypes_prefix("crate::workaround_cty") // the cty crate won't compile
-           .generate()
-           .expect("Unable to generate bindings");
+    let bindings = bindgen::Builder::default()
+        .header(arduino_h)
+        .clang_args(&[
+            "-I/usr/share/arduino/hardware/arduino/avr/cores/arduino/",
+            "-I/usr/share/arduino/hardware/arduino/avr/variants/standard/",
+            "-I/usr/avr/include",
+            "-D__COMPILING_AVR_LIBC__",
+            "-DF_CPU=16000000L",
+            "-x",
+            "c++",
+            "-mmcu=atmega328p",
+        ])
+        .parse_callbacks(Box::new(bindgen::CargoCallbacks))
+        .use_core() // because no_std
+        .ctypes_prefix("crate::workaround_cty") // the cty crate won't compile
+        .generate()
+        .expect("Unable to generate bindings");
 
-       let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
-       let bindings_out_file = out_path.join("bindings.rs");
-       bindings
-           .write_to_file(bindings_out_file)
-           .expect("Couldn't write bindings!");
-
+    let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
+    let bindings_out_file = out_path.join("bindings.rs");
+    bindings
+        .write_to_file(bindings_out_file)
+        .expect("Couldn't write bindings!");
 }
 
 /// let's build core.a from /usr/share/arduino/hardware/arduino/avr/cores/arduino/*.{c,cpp}
@@ -82,9 +81,17 @@ fn build_core_a() {
     //
 
     for path_buf in
-    list_core_arduino_source_files("/usr/share/arduino/hardware/arduino/avr/cores/arduino/")
-        .unwrap()
+        list_core_arduino_source_files("/usr/share/arduino/hardware/arduino/avr/cores/arduino/")
+            .unwrap()
     {
+        if path_buf
+            .file_name()
+            .map(|osstr| osstr == OsStr::new("main.cpp"))
+            .unwrap_or(false)
+        {
+            continue; // the rust app will provide its own main() function
+        }
+
         let is_c = match path_buf.to_str() {
             None => false,
             Some(str) => str.ends_with(".c"),
@@ -97,7 +104,7 @@ fn build_core_a() {
             writeln!(stderr(), "using avr-g++ for {:?}", path_buf);
             &mut builder_plus_plus
         }
-            .file(path_buf.to_str().unwrap());
+        .file(path_buf.to_str().unwrap());
     }
     writeln!(stderr(), "added arduino core files");
 
