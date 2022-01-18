@@ -65,10 +65,9 @@ fn build_core_a() {
     let mut builder_plus_plus = builder.clone();
     builder_plus_plus
         .rig_arduino(true)
-        .cpp(true)
         .compiler("avr-g++");
 
-    builder.rig_arduino(false).cpp(false).compiler("avr-gcc");
+    builder.rig_arduino(false).compiler("avr-gcc");
 
     //
 

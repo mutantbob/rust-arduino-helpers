@@ -9,7 +9,6 @@ pub trait ArduinoBuilder {
     /// builder
     ///     .include(anp_dir)
     ///     .rig_arduino(true)
-    ///     .cpp(true)
     ///     .compiler("avr-g++");
     ///
     /// builder.file("src-cpp/neopixel.cpp");
@@ -42,6 +41,8 @@ impl ArduinoBuilder for Build {
             } else {
                 "-std=gnu11"
             })
+            .cpp(c_plus_plus)
+            .cpp_set_stdlib(None)
             .flag("-fpermissive")
             .flag("-fno-exceptions")
             .flag("-ffunction-sections")

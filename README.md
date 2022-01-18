@@ -15,3 +15,11 @@ The `arduino-build-helpers/` crate provides a trait `ArduinoBuilder`
 which adds a `.rig_arduino()` method to `cc:Builder` that adds a 
 bunch of `-I` and `-D` stuff that is needed to cross-compile Arduino 
 libraries.
+
+### additional reading
+
+`undefined reference to _ZN4core9panicking5panic17h4e6dc9a216f914a6E`
+
+undefined references to core::panicking::panic
+
+https://github.com/rust-lang/compiler-builtins/issues/79
