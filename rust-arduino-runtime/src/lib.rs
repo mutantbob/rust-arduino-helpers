@@ -3,10 +3,14 @@
 
 use core::alloc::{GlobalAlloc, Layout};
 use core::convert::TryInto;
-use workaround_cty::c_void;
+use cty::c_void;
 
 mod raw;
-pub mod workaround_cty;
+/*
+ for some insane reason, downstream crates get link failures if they use bindgen.ctypes_prefix("cty") instead of
+ bindgen.ctypes_prefix("rust_arduino_runtime::workaround_cty") .
+*/
+pub use cty as workaround_cty;
 
 /// This is the magical init() function called by the stock Arduino main() function.
 /// I have not yet figured out what exactly it does,

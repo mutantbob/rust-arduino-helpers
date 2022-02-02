@@ -41,7 +41,7 @@ fn generate_bindings_rs() {
         .rig_arduino_uno()
         .clang_args(&["-x", "c++"])
         .parse_callbacks(Box::new(bindgen::CargoCallbacks))
-        .ctypes_prefix("crate::workaround_cty") // the cty crate won't compile
+        .ctypes_prefix("cty")
         .generate()
         .expect("Unable to generate bindings");
 
