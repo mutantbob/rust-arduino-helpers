@@ -16,7 +16,7 @@ fn list_core_arduino_source_files<P: AsRef<Path>>(
         stderr(),
         "list_core_arduino_source_files {:?}",
         dirname.as_ref()
-    );
+    )?;
     let paths = fs::read_dir(dirname)?;
     Ok(paths
         .flatten()
@@ -24,7 +24,7 @@ fn list_core_arduino_source_files<P: AsRef<Path>>(
         .filter(|path| is_c_or_cpp(path)))
 }
 
-fn is_c_or_cpp(path: &PathBuf) -> bool {
+fn is_c_or_cpp(path: &Path) -> bool {
     path.extension()
         .and_then(|extension| extension.to_str())
         .map(|extension| {
@@ -56,10 +56,10 @@ fn generate_bindings_rs() {
 fn main() {
     generate_bindings_rs();
 
-    build_core_a();
+    build_core_a().expect("failed to compile arduino runtime libraries");
 }
 
-fn build_core_a() {
+fn build_core_a() -> Result<(), std::io::Error> {
     let mut builder = cc::Build::new();
 
     let mut builder_plus_plus = builder.clone();
@@ -89,15 +89,15 @@ fn build_core_a() {
         };
 
         if is_c {
-            writeln!(stderr(), "using avr-gcc for {:?}", path_buf);
+            writeln!(stderr(), "using avr-gcc for {:?}", path_buf)?;
             &mut builder
         } else {
-            writeln!(stderr(), "using avr-g++ for {:?}", path_buf);
+            writeln!(stderr(), "using avr-g++ for {:?}", path_buf)?;
             &mut builder_plus_plus
         }
         .file(path_buf.to_str().unwrap());
     }
-    writeln!(stderr(), "added arduino core files");
+    writeln!(stderr(), "added arduino core files")?;
 
     //writeln!(stderr(), "compiler {:?}", compiler.get_compiler());
 
@@ -106,4 +106,6 @@ fn build_core_a() {
 
     println!("cargo:rustc-link-lib=static=arduino-runtime++");
     builder_plus_plus.compile("libarduino-runtime++.a");
+
+    Ok(())
 }

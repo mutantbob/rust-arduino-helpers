@@ -1,5 +1,15 @@
 use cc::Build;
 
+pub fn usr_share_arduino() -> String
+{
+    String::from("/usr/share/arduino")
+}
+
+pub fn arduino_include_root() -> String
+{
+    format!("{}/{}", usr_share_arduino(), "hardware/arduino/avr")
+}
+
 pub trait ArduinoBuilder {
     /// You would use this like:
     /// ```
@@ -27,9 +37,9 @@ pub trait ArduinoBuilder {
 
 impl ArduinoBuilder for Build {
     fn rig_arduino(&mut self, c_plus_plus: bool) -> &mut Self {
-        self.compiler("avr-g++")
-            .include("/usr/share/arduino/hardware/arduino/avr/cores/arduino/")
-            .include("/usr/share/arduino/hardware/arduino/avr/variants/standard/")
+        self.compiler(if c_plus_plus { "avr-g++" } else { "avr-gcc" })
+            .include(format!("{}/{}", arduino_include_root(), "cores/arduino/"))
+            .include(format!("{}/{}", arduino_include_root(), "variants/standard/"))
             .define("F_CPU", "16000000L")
             .define("ARDUINO", "10807")
             .define("ARDUINO_AVR_UNO", None)
@@ -56,10 +66,10 @@ pub trait ArduinoBindgen {
     /// ```
     ///
     /// fn generate_bindings_rs() {
-    ///     let arduino_h = "/usr/share/arduino/hardware/arduino/avr/cores/arduino/Arduino.h";
-    ///     println!("cargo:rerun-if-changed={}", arduino_h);
+    ///     let wrapper_h = "src-cpp/wrapper.h";
+    ///     println!("cargo:rerun-if-changed={}", wrapper_h);
     ///     let bindings = bindgen::Builder::default()
-    ///         .header(arduino_h)
+    ///         .header(wrapper_h)
     ///         .rig_arduino_uno()
     ///         .clang_args(&["-x", "c++"])
     ///         .parse_callbacks(Box::new(bindgen::CargoCallbacks))
@@ -81,7 +91,7 @@ pub trait ArduinoBindgen {
 impl ArduinoBindgen for bindgen::Builder {
     fn rig_arduino_uno(self) -> Self {
         self.clang_args(&[
-            "-I/usr/share/arduino/hardware/arduino/avr/cores/arduino/",
+            &format!("-I{}/cores/arduino/", arduino_include_root()),
             "-I/usr/share/arduino/hardware/arduino/avr/variants/standard/",
             "-I/usr/avr/include",
             "-DF_CPU=16000000L",
