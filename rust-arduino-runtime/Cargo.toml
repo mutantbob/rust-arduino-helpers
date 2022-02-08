@@ -6,7 +6,11 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-cty={path="../../../vendor/cty"}
+
+[dependencies.cty]
+git="https://github.com/mutantbob/cty.git"
+branch="2022-Feb-avr"
+
 [build-dependencies]
 bindgen="*"
 cc="*"
