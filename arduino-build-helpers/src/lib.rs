@@ -1,13 +1,16 @@
 use cc::Build;
+use std::env;
 
-pub fn usr_share_arduino() -> String
-{
-    String::from("/usr/share/arduino")
+pub fn usr_share_arduino() -> &'static str {
+    "/usr/share/arduino"
 }
 
-pub fn arduino_include_root() -> String
-{
-    format!("{}/{}", usr_share_arduino(), "hardware/arduino/avr")
+pub fn arduino_include_root() -> String {
+    env::var("ARDUINO_INCLUDE_ROOT").unwrap_or(format!(
+        "{}/{}",
+        usr_share_arduino(),
+        "hardware/arduino/avr"
+    ))
 }
 
 pub trait ArduinoBuilder {
@@ -39,7 +42,11 @@ impl ArduinoBuilder for Build {
     fn rig_arduino(&mut self, c_plus_plus: bool) -> &mut Self {
         self.compiler(if c_plus_plus { "avr-g++" } else { "avr-gcc" })
             .include(format!("{}/{}", arduino_include_root(), "cores/arduino/"))
-            .include(format!("{}/{}", arduino_include_root(), "variants/standard/"))
+            .include(format!(
+                "{}/{}",
+                arduino_include_root(),
+                "variants/standard/"
+            ))
             .define("F_CPU", "16000000L")
             .define("ARDUINO", "10807")
             .define("ARDUINO_AVR_UNO", None)
@@ -73,7 +80,7 @@ pub trait ArduinoBindgen {
     ///         .rig_arduino_uno()
     ///         .clang_args(&["-x", "c++"])
     ///         .parse_callbacks(Box::new(bindgen::CargoCallbacks))
-    ///         .ctypes_prefix("crate::workaround_cty") // the cty crate won't compile
+    ///         .ctypes_prefix("cty")
     ///         .generate()
     ///         .expect("Unable to generate bindings");
     ///
@@ -92,7 +99,7 @@ impl ArduinoBindgen for bindgen::Builder {
     fn rig_arduino_uno(self) -> Self {
         self.clang_args(&[
             &format!("-I{}/cores/arduino/", arduino_include_root()),
-            "-I/usr/share/arduino/hardware/arduino/avr/variants/standard/",
+            &format!("-I{}/variants/standard/", arduino_include_root()),
             "-I/usr/avr/include",
             "-DF_CPU=16000000L",
             "-DARDUINO=10807",

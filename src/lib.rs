@@ -16,7 +16,7 @@ macro_rules! pin_number {
                 $pin_number
             }
         }
-    }
+    };
 }
 
 pin_number! { PD0, 0 }
@@ -50,10 +50,15 @@ pin_number! { PB7, 15 }
 /// This is a macro because it causes a lot of partial moves (the `Peripherals::SPI` and the `d11-13` from `pins` )
 #[macro_export]
 macro_rules! arduino_uno_spi {
-  ($dp:expr, $pins:expr, $cs:expr) => {
-      {
-          let settings: arduino_hal::spi::Settings = arduino_hal::spi::Settings::default();
-          Spi::new($dp.SPI, $pins.d13.into_output(), $pins.d11.into_output(), $pins.d12.into_pull_up_input(), $cs.into_output(),settings)
-      }
-  };
+    ($dp:expr, $pins:expr, $cs:expr) => {{
+        let settings: arduino_hal::spi::Settings = arduino_hal::spi::Settings::default();
+        Spi::new(
+            $dp.SPI,
+            $pins.d13.into_output(),
+            $pins.d11.into_output(),
+            $pins.d12.into_pull_up_input(),
+            $cs.into_output(),
+            settings,
+        )
+    }};
 }

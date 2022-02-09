@@ -1,7 +1,7 @@
 use std::io::stderr;
 //use arduino_build_helpers::list_core_arduino_source_files;
-use arduino_build_helpers::ArduinoBindgen;
 use arduino_build_helpers::ArduinoBuilder;
+use arduino_build_helpers::{arduino_include_root, ArduinoBindgen};
 use std::env;
 use std::ffi::OsStr;
 use std::fs;
@@ -33,8 +33,17 @@ fn is_c_or_cpp(path: &Path) -> bool {
         .unwrap_or(false)
 }
 
+fn arduino_runtime_directory() -> String {
+    std::env::var("ARDUINO_RUNTIME_DIRECTORY")
+        .unwrap_or(format!("{}/cores/arduino", arduino_include_root()))
+}
+
+fn arduino_source_for(path: &str) -> String {
+    format!("{}/{}", arduino_runtime_directory(), path)
+}
+
 fn generate_bindings_rs() {
-    let arduino_h = "/usr/share/arduino/hardware/arduino/avr/cores/arduino/Arduino.h";
+    let arduino_h = arduino_source_for("Arduino.h");
     println!("cargo:rerun-if-changed={}", arduino_h);
     let bindings = bindgen::Builder::default()
         .header(arduino_h)
@@ -63,18 +72,13 @@ fn build_core_a() -> Result<(), std::io::Error> {
     let mut builder = cc::Build::new();
 
     let mut builder_plus_plus = builder.clone();
-    builder_plus_plus
-        .rig_arduino(true)
-        .compiler("avr-g++");
+    builder_plus_plus.rig_arduino(true).compiler("avr-g++");
 
     builder.rig_arduino(false).compiler("avr-gcc");
 
     //
 
-    for path_buf in
-        list_core_arduino_source_files("/usr/share/arduino/hardware/arduino/avr/cores/arduino/")
-            .unwrap()
-    {
+    for path_buf in list_core_arduino_source_files(arduino_runtime_directory()).unwrap() {
         if path_buf
             .file_name()
             .map(|osstr| osstr == OsStr::new("main.cpp"))
