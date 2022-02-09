@@ -1,5 +1,6 @@
 use cc::Build;
 use std::env;
+use std::path::Path;
 
 pub fn usr_share_arduino() -> &'static str {
     "/usr/share/arduino"
@@ -100,7 +101,7 @@ impl ArduinoBindgen for bindgen::Builder {
         self.clang_args(&[
             &format!("-I{}/cores/arduino/", arduino_include_root()),
             &format!("-I{}/variants/standard/", arduino_include_root()),
-            "-I/usr/avr/include",
+            &format!("-I{}", avr_include_dir()),
             "-DF_CPU=16000000L",
             "-DARDUINO=10807",
             "-DARDUINO_AVR_UNO",
@@ -109,6 +110,22 @@ impl ArduinoBindgen for bindgen::Builder {
         ])
         .use_core() // because no_std
     }
+}
+
+
+pub fn avr_include_dir() -> String {
+    if let Ok(val) = env::var("AVR_INCLUDE_DIRECTORY") {
+        return val.into();
+    }
+    for &path in &[
+        "/usr/avr/include",  // gentoo
+        "/usr/lib/avr/include", // debian
+        ] {
+        if Path::new(path).exists() {
+            return String::from(path);
+        }
+    }
+    panic!("unable to find AVR include directory (where is <avr/pgmspace.h> ?)")
 }
 
 #[cfg(test)]
