@@ -28,6 +28,21 @@ pub fn arduino_serial_event_run() {
     }
 }
 
+pub fn micros() -> cty::c_ulong {
+    unsafe { raw::micros() }
+}
+
+/// The array is defined in /usr/share/arduino/hardware/arduino/avr/variants/standard/pins_arduino.h to have 20 elements .
+/// This is not true for the variants/mega/pins_arduino.h which has more than I can be bothered to count.
+pub fn digital_pin_to_bit_mask_PGM(idx: usize) -> u8 {
+    let wrapper = unsafe {
+        let shenanigans = raw::digital_pin_to_bit_mask_PGM.as_ptr() as *const [u8; 20];
+        avr_progmem::ProgMem::<[u8; 20]>::new(*shenanigans)
+    };
+
+    wrapper.load_at(idx)
+}
+
 /// maybe this works?
 struct ArduinoAlloc;
 
