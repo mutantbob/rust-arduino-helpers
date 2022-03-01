@@ -1,7 +1,9 @@
 use std::io::stderr;
 //use arduino_build_helpers::list_core_arduino_source_files;
-use arduino_build_helpers::ArduinoBuilder;
-use arduino_build_helpers::{arduino_include_root, ArduinoBindgen};
+use arduino_build_helpers::exclude_some_headers::header_files_in_directory;
+use arduino_build_helpers::{
+    arduino_include_root, avr_include_dir, ArduinoBindgen, ArduinoBuilder,
+};
 use std::env;
 use std::ffi::OsStr;
 use std::fs;
@@ -42,7 +44,22 @@ fn arduino_source_for(path: &str) -> String {
     format!("{}/{}", arduino_runtime_directory(), path)
 }
 
-fn generate_bindings_generic(header: &str, out_basename: &str, excludes: &[&str]) {
+fn arduino_source_for_multi<'a>(paths: &'a [&'a str]) -> impl 'a + Iterator<Item = String> {
+    paths
+        .iter()
+        .map(|path| format!("{}/{}", arduino_runtime_directory(), path))
+}
+
+fn and_avr_include<I: IntoIterator<Item = String>>(some: I) -> impl Iterator<Item = String> {
+    let headers2 = header_files_in_directory(&avr_include_dir());
+    some.into_iter().chain(headers2)
+}
+
+fn generate_bindings_generic<I: IntoIterator<Item = String>>(
+    header: &str,
+    out_basename: &str,
+    excludes: I,
+) {
     let arduino_h = arduino_source_for(header);
     println!("cargo:rerun-if-changed={}", arduino_h);
 
@@ -53,7 +70,7 @@ fn generate_bindings_generic(header: &str, out_basename: &str, excludes: &[&str]
         .parse_callbacks(Box::new(bindgen::CargoCallbacks))
         .ctypes_prefix("cty");
     for excluded in excludes {
-        builder = builder.blocklist_file(arduino_source_for(excluded));
+        builder = builder.blocklist_file(excluded);
     }
     let bindings = builder.generate().expect("Unable to generate bindings");
 
@@ -65,18 +82,30 @@ fn generate_bindings_generic(header: &str, out_basename: &str, excludes: &[&str]
 }
 
 fn generate_bindings_rs() {
-    generate_bindings_generic("Arduino.h", "bindings.rs", &["Stream.h"]);
+    generate_bindings_generic(
+        "Arduino.h",
+        "bindings.rs",
+        arduino_source_for_multi(&["Stream.h"]),
+    );
     generate_bindings_generic(
         "IPAddress.h",
         "bindings_ipaddress.rs",
-        &["Printable.h", "WString.h"],
+        and_avr_include(arduino_source_for_multi(&["Printable.h", "WString.h"])),
     );
     generate_bindings_generic(
         "Client.h",
         "bindings_client.rs",
-        &["Print.h", "Stream.h", "IPAddress.h"],
+        and_avr_include(arduino_source_for_multi(&[
+            "Print.h",
+            "Stream.h",
+            "IPAddress.h",
+        ])),
     );
-    generate_bindings_generic("Stream.h", "bindings_stream.rs", &["Print.h"]);
+    generate_bindings_generic(
+        "Stream.h",
+        "bindings_stream.rs",
+        and_avr_include(arduino_source_for_multi(&["Print.h"])),
+    );
 }
 
 /// let's build core.a from /usr/share/arduino/hardware/arduino/avr/cores/arduino/*.{c,cpp}

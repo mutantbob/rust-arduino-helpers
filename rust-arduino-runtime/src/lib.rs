@@ -8,6 +8,7 @@ use cty::c_void;
 mod raw;
 pub use raw::client;
 pub use raw::stream;
+pub use raw::{boolean, byte, uint_farptr_t, word};
 /*
  for some insane reason, downstream crates get link failures if they use bindgen.ctypes_prefix("cty") instead of
  bindgen.ctypes_prefix("rust_arduino_runtime::workaround_cty") .
@@ -67,7 +68,7 @@ unsafe impl GlobalAlloc for ArduinoAlloc {
 static ALLOCATOR: ArduinoAlloc = ArduinoAlloc;
 
 pub mod ip_address {
-    pub use crate::raw::ip_address::*;
+    pub use crate::raw::ip_address::IPAddress;
     use ufmt::{uDisplay, uWrite, Formatter};
 
     pub fn ip_address_4(a: u8, b: u8, c: u8, d: u8) -> IPAddress {
@@ -79,7 +80,7 @@ pub mod ip_address {
         where
             W: uWrite + ?Sized,
         {
-            let x = unsafe { &self._address.bytes };
+            let x: &[u8; 4] = unsafe { self._address.bytes.as_ref() };
             x[0].fmt(formatter)?;
             '.'.fmt(formatter)?;
             x[1].fmt(formatter)?;

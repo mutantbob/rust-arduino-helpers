@@ -5,7 +5,7 @@
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
 pub mod ip_address {
-    use crate::raw::*;
+    use crate::raw::Print;
 
     include!(concat!(env!("OUT_DIR"), "/bindings_ipaddress.rs"));
 }

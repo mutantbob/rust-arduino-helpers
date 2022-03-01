@@ -14,6 +14,10 @@ pub fn arduino_include_root() -> String {
     ))
 }
 
+pub fn spi_include_dir() -> String {
+    format!("{}/libraries/SPI/src", arduino_include_root())
+}
+
 pub trait ArduinoBuilder {
     /// You would use this like:
     /// ```
@@ -125,6 +129,81 @@ pub fn avr_include_dir() -> String {
         }
     }
     panic!("unable to find AVR include directory (where is <avr/pgmspace.h> ?)")
+}
+
+pub mod exclude_some_headers {
+    use crate::{arduino_include_root, avr_include_dir, spi_include_dir};
+    use std::fs;
+    use std::fs::DirEntry;
+    use std::os::unix::ffi::OsStrExt;
+
+    pub trait BlocklistFileMulti {
+        fn blocklist_file_multi<T: AsRef<str>, I: IntoIterator<Item = T>>(self, iter: I) -> Self;
+    }
+
+    impl BlocklistFileMulti for bindgen::Builder {
+        fn blocklist_file_multi<T: AsRef<str>, I: IntoIterator<Item = T>>(self, iter: I) -> Self {
+            let mut builder = self;
+            for file in iter {
+                println!("# blocking file {}", file.as_ref());
+                builder = builder.blocklist_file(file)
+            }
+            builder
+        }
+    }
+
+    pub fn suppressed_headers() -> impl Iterator<Item = String> {
+        let directories = vec![
+            format!("{}/cores/arduino", arduino_include_root()),
+            spi_include_dir(),
+            avr_include_dir(),
+        ];
+
+        headers_in_directories(directories)
+    }
+
+    pub fn headers_in_directories<'a, T: Into<String>, I: IntoIterator<Item = T>>(
+        directories: I,
+    ) -> impl Iterator<Item = String> {
+        directories
+            .into_iter()
+            .map(|dir| header_files_in_directory(&dir.into()))
+            .flatten()
+    }
+
+    pub fn header_files_in_directory(dir: &str) -> impl Iterator<Item = String> {
+        let x = fs::read_dir(dir).unwrap();
+        x.into_iter()
+            .flatten()
+            .map(|path| header_file_or_recurse(path))
+            .flatten()
+        //.map(|path| path.path().to_str().map(|path| path.to_string()))
+        //.flatten()
+    }
+
+    pub fn header_file_or_recurse(path: DirEntry) -> Vec<String> {
+        let path_buf = path.path();
+        if path_buf.is_dir() {
+            match path_buf.as_os_str().to_str() {
+                Some(dirname) => header_files_in_directory(dirname).collect(),
+                None => vec![],
+            }
+        } else if is_header_file(&path) {
+            path.path()
+                .to_str()
+                .map_or(vec![], |path| vec![path.to_string()])
+        } else {
+            vec![]
+        }
+    }
+
+    pub fn is_header_file(path: &DirEntry) -> bool {
+        let basename = path.file_name();
+        let basename = basename.as_os_str().as_bytes();
+        let len: usize = basename.len();
+        let tmp = &basename[(len - 2)..len];
+        tmp == b".h"
+    }
 }
 
 #[cfg(test)]
