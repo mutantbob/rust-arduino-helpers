@@ -6,6 +6,8 @@ use core::convert::TryInto;
 use cty::c_void;
 
 mod raw;
+pub use raw::client;
+pub use raw::stream;
 /*
  for some insane reason, downstream crates get link failures if they use bindgen.ctypes_prefix("cty") instead of
  bindgen.ctypes_prefix("rust_arduino_runtime::workaround_cty") .
@@ -34,6 +36,7 @@ pub fn micros() -> cty::c_ulong {
 
 /// The array is defined in /usr/share/arduino/hardware/arduino/avr/variants/standard/pins_arduino.h to have 20 elements .
 /// This is not true for the variants/mega/pins_arduino.h which has more than I can be bothered to count.
+#[allow(non_snake_case)]
 pub fn digital_pin_to_bit_mask_PGM(idx: usize) -> u8 {
     let wrapper = unsafe {
         let shenanigans = raw::digital_pin_to_bit_mask_PGM.as_ptr() as *const [u8; 20];
@@ -62,6 +65,32 @@ unsafe impl GlobalAlloc for ArduinoAlloc {
 
 #[global_allocator]
 static ALLOCATOR: ArduinoAlloc = ArduinoAlloc;
+
+pub mod ip_address {
+    pub use crate::raw::ip_address::*;
+    use ufmt::{uDisplay, uWrite, Formatter};
+
+    pub fn ip_address_4(a: u8, b: u8, c: u8, d: u8) -> IPAddress {
+        unsafe { IPAddress::new1(a, b, c, d) }
+    }
+
+    impl uDisplay for IPAddress {
+        fn fmt<W>(&self, formatter: &mut Formatter<W>) -> Result<(), W::Error>
+        where
+            W: uWrite + ?Sized,
+        {
+            let x = unsafe { &self._address.bytes };
+            x[0].fmt(formatter)?;
+            '.'.fmt(formatter)?;
+            x[1].fmt(formatter)?;
+            '.'.fmt(formatter)?;
+            x[2].fmt(formatter)?;
+            '.'.fmt(formatter)?;
+            x[3].fmt(formatter)?;
+            Ok(())
+        }
+    }
+}
 
 #[cfg(test)]
 mod tests {

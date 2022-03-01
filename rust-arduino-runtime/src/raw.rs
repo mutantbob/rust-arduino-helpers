@@ -3,3 +3,17 @@
 #![allow(clippy::all)]
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
+
+pub mod ip_address {
+    use crate::raw::*;
+
+    include!(concat!(env!("OUT_DIR"), "/bindings_ipaddress.rs"));
+}
+
+pub mod client {
+    include!(concat!(env!("OUT_DIR"), "/bindings_client.rs"));
+}
+
+pub mod stream {
+    include!(concat!(env!("OUT_DIR"), "/bindings_stream.rs"));
+}

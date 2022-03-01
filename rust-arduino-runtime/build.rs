@@ -42,23 +42,41 @@ fn arduino_source_for(path: &str) -> String {
     format!("{}/{}", arduino_runtime_directory(), path)
 }
 
-fn generate_bindings_rs() {
-    let arduino_h = arduino_source_for("Arduino.h");
+fn generate_bindings_generic(header: &str, out_basename: &str, excludes: &[&str]) {
+    let arduino_h = arduino_source_for(header);
     println!("cargo:rerun-if-changed={}", arduino_h);
-    let bindings = bindgen::Builder::default()
+
+    let mut builder = bindgen::Builder::default()
         .header(arduino_h)
         .rig_arduino_uno()
         .clang_args(&["-x", "c++"])
         .parse_callbacks(Box::new(bindgen::CargoCallbacks))
-        .ctypes_prefix("cty")
-        .generate()
-        .expect("Unable to generate bindings");
+        .ctypes_prefix("cty");
+    for excluded in excludes {
+        builder = builder.blocklist_file(arduino_source_for(excluded));
+    }
+    let bindings = builder.generate().expect("Unable to generate bindings");
 
     let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
-    let bindings_out_file = out_path.join("bindings.rs");
+    let bindings_out_file = out_path.join(out_basename);
     bindings
         .write_to_file(bindings_out_file)
         .expect("Couldn't write bindings!");
+}
+
+fn generate_bindings_rs() {
+    generate_bindings_generic("Arduino.h", "bindings.rs", &["Stream.h"]);
+    generate_bindings_generic(
+        "IPAddress.h",
+        "bindings_ipaddress.rs",
+        &["Printable.h", "WString.h"],
+    );
+    generate_bindings_generic(
+        "Client.h",
+        "bindings_client.rs",
+        &["Print.h", "Stream.h", "IPAddress.h"],
+    );
+    generate_bindings_generic("Stream.h", "bindings_stream.rs", &["Print.h"]);
 }
 
 /// let's build core.a from /usr/share/arduino/hardware/arduino/avr/cores/arduino/*.{c,cpp}
