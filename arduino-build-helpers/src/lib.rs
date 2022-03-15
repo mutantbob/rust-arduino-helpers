@@ -112,15 +112,14 @@ impl ArduinoBindgen for bindgen::Builder {
     }
 }
 
-
 pub fn avr_include_dir() -> String {
     if let Ok(val) = env::var("AVR_INCLUDE_DIRECTORY") {
         return val.into();
     }
     for &path in &[
-        "/usr/avr/include",  // gentoo
+        "/usr/avr/include",     // gentoo
         "/usr/lib/avr/include", // debian
-        ] {
+    ] {
         if Path::new(path).exists() {
             return String::from(path);
         }
