@@ -17,6 +17,7 @@ use arduino_hal::Usart;
 use avr_device::atmega328p::USART0;
 use avr_device::interrupt::Mutex;
 use core::cell::RefCell;
+pub use ufmt;
 
 pub type DefaultSerial = Usart<USART0, Pin<Input, PD0>, Pin<Output, PD1>>;
 static mut SERIAL_STATIC: Mutex<RefCell<Option<DefaultSerial>>> = Mutex::new(RefCell::new(None));
@@ -25,7 +26,7 @@ static mut SERIAL_STATIC: Mutex<RefCell<Option<DefaultSerial>>> = Mutex::new(Ref
 #[macro_export]
 macro_rules! println {
     ( $($stuff: expr),+) => {
-        $crate::with_serial(|serial| uwriteln!(serial,$($stuff),+))
+        $crate::with_serial(|serial| $crate::ufmt::uwriteln!(serial,$($stuff),+))
     }
 }
 

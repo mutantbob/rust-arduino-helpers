@@ -22,3 +22,9 @@ features = ["arduino-uno"]
 git = "https://github.com/mutantbob/avr-hal.git"
 branch="2022-mar-ufmt-fix"
 #path="../../../vendor/avr-hal/avr-hal-generic"
+
+[dependencies.ufmt]
+#version="*"
+#path="../../../vendor/ufmt"
+git="https://github.com/mrk-its/ufmt.git"
+branch="ptr_width_16_fix"
