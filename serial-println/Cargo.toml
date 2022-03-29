@@ -3,7 +3,9 @@ name = "serial-println"
 version = "0.1.0"
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[features]
+atmega328p = [ "arduino-hal/arduino-uno"]
+atmega2560 = [ "arduino-hal/arduino-mega2560"]
 
 [dependencies]
 avr-device="*"
@@ -14,7 +16,6 @@ avr-device="*"
 git = "https://github.com/mutantbob/avr-hal.git"
 branch="2022-mar-ufmt-fix"
 #path="../../../vendor/avr-hal/arduino-hal"
-features = ["arduino-uno"]
 
 [dependencies.avr-hal-generic]
 #git = "https://github.com/rahix/avr-hal"

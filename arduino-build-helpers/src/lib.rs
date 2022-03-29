@@ -14,6 +14,43 @@ pub fn arduino_include_root() -> String {
     ))
 }
 
+pub struct ArduinoCompileFlags {
+    mmcu: String,
+    arduino_avr_define_name: String,
+    arduino_variant_include: String,
+}
+
+impl ArduinoCompileFlags {
+    pub fn new() -> ArduinoCompileFlags {
+        let target = env::var("TARGET").unwrap();
+
+        let target_tail: String = target[4..].to_string();
+
+        match target.as_str() {
+            "avr-atmega328p" => ArduinoCompileFlags {
+                mmcu: target_tail,
+                arduino_avr_define_name: "ARDUINO_AVR_UNO".to_string(),
+                arduino_variant_include: format!(
+                    "{}/{}",
+                    arduino_include_root(),
+                    "variants/standard/"
+                ),
+            },
+            "avr-atmega2560" => ArduinoCompileFlags {
+                mmcu: target_tail,
+                arduino_avr_define_name: "ARDUINO_AVR_MEGA2560".to_string(),
+                arduino_variant_include: format!("{}/{}", arduino_include_root(), "variants/mega/"),
+            },
+            _ => panic!(
+                "I do not know how to compile arduino libraries for TARGET={}",
+                target
+            ),
+        }
+    }
+}
+
+//
+
 pub trait ArduinoBuilder {
     /// You would use this like:
     /// ```
@@ -41,18 +78,15 @@ pub trait ArduinoBuilder {
 
 impl ArduinoBuilder for Build {
     fn rig_arduino(&mut self, c_plus_plus: bool) -> &mut Self {
+        let arduino_compile_flags = ArduinoCompileFlags::new();
         self.compiler(if c_plus_plus { "avr-g++" } else { "avr-gcc" })
             .include(format!("{}/{}", arduino_include_root(), "cores/arduino/"))
-            .include(format!(
-                "{}/{}",
-                arduino_include_root(),
-                "variants/standard/"
-            ))
+            .include(arduino_compile_flags.arduino_variant_include)
             .define("F_CPU", "16000000L")
             .define("ARDUINO", "10807")
-            .define("ARDUINO_AVR_UNO", None)
+            .define(&arduino_compile_flags.arduino_avr_define_name, None)
             .define("ARDUINO_ARCH_AVR", None)
-            .flag("-mmcu=atmega328p")
+            .flag(&format!("-mmcu={}", arduino_compile_flags.mmcu))
             .flag("-Os")
             .flag(if c_plus_plus {
                 "-std=gnu++11"
@@ -98,15 +132,16 @@ pub trait ArduinoBindgen {
 
 impl ArduinoBindgen for bindgen::Builder {
     fn rig_arduino_uno(self) -> Self {
+        let arduino_compile_flags = ArduinoCompileFlags::new();
         self.clang_args(&[
             &format!("-I{}/cores/arduino/", arduino_include_root()),
-            &format!("-I{}/variants/standard/", arduino_include_root()),
+            &format!("-I{}", arduino_compile_flags.arduino_variant_include),
             &format!("-I{}", avr_include_dir()),
             "-DF_CPU=16000000L",
             "-DARDUINO=10807",
-            "-DARDUINO_AVR_UNO",
+            &format!("-D{}", arduino_compile_flags.arduino_avr_define_name),
             "-DARDUINO_ARCH_AVR",
-            "-mmcu=atmega328p",
+            &format!("-mmcu={}", arduino_compile_flags.mmcu),
         ])
         .use_core() // because no_std
     }

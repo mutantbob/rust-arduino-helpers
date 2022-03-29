@@ -5,6 +5,11 @@ authors = ["Robert Forsman <git@thoth.purplefrog.com>"]
 edition = "2018"
 license = "MIT OR Apache-2.0"
 
+[features]
+board-selected=[]
+atmega328p = [ "atmega-hal/atmega328p", "board-selected" ]
+atmega2560 = [ "atmega-hal/atmega2560", "board-selected" ]
+
 [dependencies]
 panic-halt = "0.2.0"
 nb = "0.1.2"
@@ -17,15 +22,6 @@ embedded-hal = "0.2.3"
 git = "https://github.com/mutantbob/avr-hal.git"
 branch="2022-mar-ufmt-fix"
 #path="../../vendor/avr-hal/mcu/atmega-hal"
-features = ["atmega328p"]
-
-[dependencies.arduino-hal]
-#git = "https://github.com/rahix/avr-hal"
-#rev = "f84c0dff774c2292bc932b670955165161ecc7d1"
-git = "https://github.com/mutantbob/avr-hal.git"
-branch="2022-mar-ufmt-fix"
-#path="../../vendor/avr-hal/arduino-hal"
-features = ["arduino-uno"]
 
 # Configure the build for minimal size - AVRs have very little program memory
 [profile.dev]
