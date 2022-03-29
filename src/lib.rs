@@ -30,7 +30,6 @@ macro_rules! pin_number {
 
 #[cfg(feature = "atmega328p")]
 pub mod atmega328p {
-    use crate::pin_number;
     use atmega_hal::port::*;
     pin_number! { PD0, 0 }
     pin_number! { PD1, 1 }
