@@ -1,6 +1,7 @@
 #![no_std]
 #![feature(alloc_error_handler)] // at the top of the file
 
+use avr_progmem::wrapper::ProgMem;
 use core::alloc::{GlobalAlloc, Layout};
 use core::convert::TryInto;
 use cty::c_void;
@@ -37,7 +38,7 @@ pub fn micros() -> cty::c_ulong {
 pub fn digital_pin_to_bit_mask_PGM(idx: usize) -> u8 {
     let wrapper = unsafe {
         let shenanigans = raw::digital_pin_to_bit_mask_PGM.as_ptr() as *const [u8; 20];
-        avr_progmem::ProgMem::<[u8; 20]>::new(*shenanigans)
+        ProgMem::<[u8; 20]>::new(shenanigans)
     };
 
     wrapper.load_at(idx)
