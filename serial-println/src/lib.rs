@@ -27,6 +27,16 @@ macro_rules! println {
     }
 }
 
+/// prints to the serial object that was configured using [initialize_serial_static]
+#[macro_export]
+macro_rules! print {
+    ( $($stuff: expr),+) => { {
+        use $crate::ufmt::UnstableDoAsFormatter;
+        $crate::with_serial(|serial| $crate::ufmt::uwrite!(serial,$($stuff),+))
+    }
+    }
+}
+
 /// load the static global with a serial port object
 ///
 ///```
