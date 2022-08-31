@@ -21,8 +21,7 @@ static mut SERIAL_STATIC: Mutex<RefCell<Option<DefaultSerial>>> = Mutex::new(Ref
 #[macro_export]
 macro_rules! println {
     ( $($stuff: expr),+) => { {
-        use $crate::ufmt::UnstableDoAsFormatter;
-        $crate::with_serial(|serial| $crate::ufmt::uwriteln!(serial,$($stuff),+))
+        $crate::with_serial(|serial| {let _ = $crate::ufmt::uwriteln!(serial,$($stuff),+);})
     }
     }
 }
@@ -32,7 +31,7 @@ macro_rules! println {
 macro_rules! print {
     ( $($stuff: expr),+) => { {
         use $crate::ufmt::UnstableDoAsFormatter;
-        $crate::with_serial(|serial| $crate::ufmt::uwrite!(serial,$($stuff),+))
+        $crate::with_serial(|serial| {let _ = $crate::ufmt::uwrite!(serial,$($stuff),+);})
     }
     }
 }
@@ -55,10 +54,15 @@ pub fn initialize_serial_static(serial: DefaultSerial) {
 pub fn with_serial<T, F>(core: F) -> T
 where
     F: FnOnce(&mut DefaultSerial) -> T,
+    T: Default,
 {
     let mut serial =
         avr_device::interrupt::free(|cs| unsafe { &SERIAL_STATIC }.borrow(cs).borrow_mut().take());
-    let rval = core(serial.as_mut().unwrap());
+    let rval = if let Some(serial) = serial.as_mut() {
+        core(serial)
+    } else {
+        T::default()
+    };
     avr_device::interrupt::free(|cs| unsafe { &SERIAL_STATIC }.borrow(cs).replace(serial));
     rval
 }

@@ -9,14 +9,14 @@ atmega2560 = [ "arduino-hal/arduino-mega2560"]
 
 [dependencies]
 avr-device="*"
-ufmt="*"
+ufmt = "0.1.2"
 
 [dependencies.arduino-hal]
 git = "https://github.com/rahix/avr-hal"
 rev = "d0d2f243bd3e10b49f6a78d44839a6caa8be7d43"
-#rev = "f84c0dff774c2292bc932b670955165161ecc7d1"
+#path="../../../vendor/avr-hal/arduino-hal"
 
 [dependencies.avr-hal-generic]
 git = "https://github.com/rahix/avr-hal"
 rev = "d0d2f243bd3e10b49f6a78d44839a6caa8be7d43"
-#rev = "f84c0dff774c2292bc932b670955165161ecc7d1"
+#path="../../../vendor/avr-hal/avr-hal-generic"
